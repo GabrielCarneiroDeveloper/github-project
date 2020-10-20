@@ -1,0 +1,43 @@
+#####################################
+# Common configs
+#####################################
+openapi: '3.0.2'
+info:
+  version: '1.0'
+  title: BrightEyes Store
+  description: BrightEyes Store management API
+
+#####################################
+# Servers
+#####################################
+servers:
+  - url: http://HOST_ADDRESS_AND_PORT # will be changed in server starting
+
+#####################################
+# Tags
+#####################################
+tags:
+  - name: Server
+    description: Server status route
+
+#####################################
+# Components
+#####################################
+
+#####################################
+# Security
+#####################################
+
+#####################################
+# Paths
+#####################################
+paths:
+  # Server routes
+  /:
+    get:
+      summary: Check if server is running
+      tags:
+        - Server
+      responses:
+        200:
+          description: Shows message about server is running well

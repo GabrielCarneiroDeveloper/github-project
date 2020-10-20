@@ -1,0 +1,7 @@
+version: "3.3"
+services:
+  github-project:
+      image: github-project_gabrielcarneirodeveloper:1
+      build:
+        context: ./
+        dockerfile: Dockerfile

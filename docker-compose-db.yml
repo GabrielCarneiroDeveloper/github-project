@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+
+  mongo:
+    image: mongo
+    deploy:
+      restart_policy:
+        condition: on-failure
+    environment:
+        - MONGO_INITDB_DB=github-project
+        - MONGO_INITDB_ROOT_USERNAME=admin
+        - MONGO_INITDB_ROOT_PASSWORD=senha123
+    ports:
+      - 5558:27017
+    volumes:
+      - mongodb-volume:/data/db
+    command: --auth
+
+volumes:
+  mongodb-volume:
+    external: false

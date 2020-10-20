@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  web_service:
+    image: github-project_gabrielcarneirodeveloper:1
+    ports:
+      - 3333:3333
+    environment:
+      - NODE_ENV=production
+    deploy:
+      mode: replicated
+      replicas: 2
