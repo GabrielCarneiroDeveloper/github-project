@@ -1,17 +1,17 @@
 import cors from 'cors'
 import path from 'path'
 import helmet from 'helmet'
+import swaggerUi from 'swagger-ui-express'
 import express, { Response, Router } from 'express'
 import { load } from 'yamljs'
 
+import logger from './common/logger/logger'
 import { DTOController } from './common/dto/DTOController'
 import { IDb } from './common/database/IDb'
 import { Db } from './common/database/Db'
-import { AuthController } from './modules/auth/AuthController'
-import logger from './common/logger/logger'
-import APP_CONFIG from './config/app.config'
 
-import swaggerUi from 'swagger-ui-express'
+import APP_CONFIG from './config/app.config'
+import { GithubController } from './modules/github/github.controller'
 
 export interface IApp {
   init(): Promise<void>
@@ -40,18 +40,20 @@ export class App implements IApp {
     })
 
     await this.initApiSummarize(this.route)
-    await this.initModule(AuthController, this.route)
+    await this.initModule(GithubController, this.route)
   }
 
   async initApiSummarize(route: Router): Promise<void> {
     const swaggerDoc = load(path.resolve(__dirname, 'doc', 'swagger.yml'))
-    swaggerDoc.servers = swaggerDoc.servers.map((host: { url: string; description: string }) => {
-      host.url = host.url.replace(
-        'HOST_ADDRESS_AND_PORT', // this should be in swagger.yml to be replaced
-        `${APP_CONFIG.serve.host}:${APP_CONFIG.serve.port}`
-      )
-      return host
-    })
+    swaggerDoc.servers = swaggerDoc.servers.map(
+      (host: { url: string; description: string }) => {
+        host.url = host.url.replace(
+          'HOST_ADDRESS_AND_PORT', // this should be in swagger.yml to be replaced
+          `${APP_CONFIG.serve.host}:${APP_CONFIG.serve.port}`
+        )
+        return host
+      }
+    )
 
     route.use('/apidoc', swaggerUi.serve, swaggerUi.setup(swaggerDoc))
   }

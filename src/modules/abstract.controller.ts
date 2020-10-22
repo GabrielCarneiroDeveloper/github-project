@@ -1,6 +1,12 @@
 import { IAbstractController } from './../interfaces/IControllers'
 import { Request, Response } from 'express'
-import { FindManyOptions, FindOneOptions, getRepository, RemoveOptions, SaveOptions } from 'typeorm'
+import {
+  FindManyOptions,
+  FindOneOptions,
+  getRepository,
+  RemoveOptions,
+  SaveOptions
+} from 'typeorm'
 
 export class AbstractController implements IAbstractController {
   ModelClassName: any
@@ -23,7 +29,10 @@ export class AbstractController implements IAbstractController {
     }
   }
 
-  listOneById = async (request: Request, response: Response): Promise<Response> => {
+  listOneById = async (
+    request: Request,
+    response: Response
+  ): Promise<Response> => {
     try {
       const id = request.params.id
       const repository = getRepository(this.ModelClassName)
@@ -65,7 +74,10 @@ export class AbstractController implements IAbstractController {
       const id = request.params.id
       const repository = getRepository(this.ModelClassName)
       await repository.update(id, data)
-      const updateObject = await repository.findOneOrFail(id, this.findOneOptions)
+      const updateObject = await repository.findOneOrFail(
+        id,
+        this.findOneOptions
+      )
       return response.json({
         message: 'Object updated',
         data: updateObject
@@ -83,7 +95,10 @@ export class AbstractController implements IAbstractController {
     try {
       const id = request.params.id
       const repository = getRepository(this.ModelClassName)
-      const foundObject = await repository.findOneOrFail(id, this.findOneOptions)
+      const foundObject = await repository.findOneOrFail(
+        id,
+        this.findOneOptions
+      )
       await repository.remove(foundObject, this.removeOptions)
       return response.json({
         message: 'Object removed'
