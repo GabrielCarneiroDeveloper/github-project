@@ -5,7 +5,7 @@
   "author": "Gabriel Carneiro <gabrielcarneirocef@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "dev": "export NODE_ENV=development && cd src/ && ts-node-dev -r tsconfig-paths/register --respawn --transpile-only --no-notify --ignore-watch node_modules server.ts",
+    "dev": "cd src/ && ts-node-dev -r tsconfig-paths/register --respawn --transpile-only --no-notify --ignore-watch node_modules server.ts",
     "build": "tsc && cp .env ./dist/ && cp package.json ./dist/ && cp ormconfig.json ./dist/ && cp -r ./src/doc ./dist/ && cp -r ./src/public ./dist/ && cd ./dist/ && yarn --no-lockfile --production",
     "test": "jest",
     "start": "ts-node server.js",
