@@ -8,6 +8,8 @@ import logger from './../../common/logger/logger'
 import { IController } from '../../interfaces/IControllers'
 import { DTOController } from '../../common/dto/DTOController'
 import { IssueStatesEnum } from './github.enum'
+import { getMongoRepository } from 'typeorm'
+import { GithubIssue, GithubRepo } from './github.models'
 
 interface IGithubController {
   getRepoInformation(req: Request, res: Response): Promise<Response<ReposGetResponseData>>
@@ -68,19 +70,34 @@ export class GithubController implements IController, IGithubController {
 
   // to development
   getRepoIssues = async (req: Request, res: Response): Promise<Response<ReposGetResponseData>> => {
+    logger.debug('Getting repo issues...')
     try {
       const { owner, repo } = req.params
       const state = (req.query.state as IssueStatesEnum) || IssueStatesEnum.ALL
       checkIfIssueStateIsValid(state)
 
-      const response = await this.service.getRepoIssues({
+      const githubDbRepo = getMongoRepository(GithubRepo)
+
+      const collectedIssues = await this.service.getRepoIssues({
         owner,
         repo,
         state: state
       })
-      const repoIssues = response.data
+      // const repoIssues = response.data
 
-      return res.json(repoIssues)
+      const githubRepo = new GithubRepo()
+      githubRepo.name = repo
+      githubRepo.issues = collectedIssues.map((issue) => new GithubIssue(issue))
+
+      try {
+        logger.debug('Saving Github repository in database')
+        await githubDbRepo.save(githubRepo)
+        logger.debug('Github repository saved in database successfully')
+      } catch (error) {
+        throw new Error(error.message)
+      }
+
+      return res.json(collectedIssues)
     } catch (error) {
       logger.error(error.message)
       return res.status(401).send({ message: error.message })

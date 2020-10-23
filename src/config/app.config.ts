@@ -24,11 +24,20 @@ function readVersionFile(): string {
 interface IAPP_CONFIG {
   projectName: string
   jwtSecretkey: string
+  githubAccessToken: string
   version: string
   serve: {
     host: string
     port: number
     logLevel: string
+  }
+  db: {
+    type: string
+    host: string
+    port: number
+    database: string
+    user: string
+    password: string
   }
   logs: {
     basePath: string
@@ -40,12 +49,24 @@ interface IAPP_CONFIG {
 const APP_CONFIG = {
   projectName: 'github-project',
   jwtSecretkey: process.env.JWT_SECRET_KEY,
+  githubAccessToken: process.env.GITHUB_TOKEN,
   version: readVersionFile(),
+
   serve: {
     host: process.env.HOST_ADDRESS || '0.0.0.0',
     port: parseInt(process.env.PORT || '3400'),
     logLevel: process.env.LOG_LEVEL || 'info'
   },
+
+  db: {
+    database: process.env.DB_DATABASE,
+    host: process.env.DB_HOST,
+    port: parseInt(process.env.DB_PORT || ''),
+    type: process.env.DB_TYPE,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD
+  },
+
   logs: {
     basePath: LogsBasePath,
     errorsPath: path.resolve(LogsBasePath, 'errors.log'),
