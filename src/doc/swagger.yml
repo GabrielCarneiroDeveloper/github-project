@@ -19,14 +19,200 @@ servers:
 tags:
   - name: Server
     description: Server status route
+  - name: LibQuality
+    description: Main project
 
 #####################################
 # Components
 #####################################
+components:
+  schemas:
+    GithubRepo:
+      type: object
+      properties:
+          owner:
+            type: string
+          name:
+            type: string
+          repository_url:
+            type: string
+          id: 
+            type: string
+          quantity_of_opened_issues:
+            type: integer
+            format: int64
+    
+    GithubUser:
+      type: object
+      properties:
+        login: 
+          type: string
+        id: 
+          type: number
+        node_id: 
+          type: string
+        avatar_url: 
+          type: string
+        gravatar_id: 
+          type: string
+        url: 
+          type: string
+        html_url: 
+          type: string
+        followers_url: 
+          type: string
+        following_url: 
+          type: string
+        gists_url: 
+          type: string
+        starred_url: 
+          type: string
+        subscriptions_url: 
+          type: string
+        organizations_url: 
+          type: string
+        repos_url: 
+          type: string
+        events_url: 
+          type: string
+        received_events_url: 
+          type: string
+        type: 
+          type: string
+        site_admin: 
+          type: boolean
+
+    GithubLabel:
+      type: object
+      properties:
+        id: 
+          type: number
+        node_id: 
+          type: string
+        url: 
+          type: string
+        name: 
+          type: string
+        description: 
+          type: string
+        color: 
+          type: string
+        default: 
+          type: boolean
+
+    GithubPullRequest:
+      type: object
+      properties:
+        url: 
+          type: string
+        html_url: 
+          type: string
+        diff_url: 
+          type: string
+        patch_url: 
+          type: string
+
+    GithubMilestone:
+      type: object
+      properties:
+        url: 
+          type: string
+        html_url: 
+          type: string
+        labels_url: 
+          type: string
+        id: 
+          type: number
+        node_id: 
+          type: string
+        number: 
+          type: number
+        state: 
+          type: string
+        title: 
+          type: string
+        description: 
+          type: string
+        creator: 
+          type: object
+          $ref: '#/components/schemas/GithubUser'
+        open_issues: 
+          type: number
+        closed_issues: 
+          type: number
+        created_at: 
+          type: string
+        updated_at: 
+          type: string
+        closed_at: 
+          type: string
+        due_on: 
+          type: string
+  
+    GithubIssue:  
+      type: object
+      properties:
+        _id: 
+          type: string
+        id: 
+          type: number
+        node_id: 
+          type: string
+        url: 
+          type: string
+        repository_url: 
+          type: string
+        labels_url: 
+          type: string
+        comments_url: 
+          type: string
+        events_url: 
+          type: string
+        html_url: 
+          type: string
+        number: 
+          type: number
+        state: 
+          type: string
+        title: 
+          type: string
+        body: 
+          type: string
+        user: 
+          $ref: '#/components/schemas/GithubUser'
+        labels: 
+          type: array
+          items:
+            $ref: '#/components/schemas/GithubLabel'
+        assignee: 
+          $ref: '#/components/schemas/GithubUser'
+        assignees: 
+          type: array
+          items:
+            $ref: '#/components/schemas/GithubUser'  
+        milestone: 
+          $ref: '#/components/schemas/GithubMilestone'
+        locked: 
+          type: boolean
+        active_lock_reason: 
+          type: string
+        comments: 
+          type: number
+        pull_request: 
+          $ref: '#/components/schemas/GithubPullRequest'  
+        closed_at: 
+          type: string
+        created_at: 
+          type: string
+        updated_at: 
+          type: string
+
 
 #####################################
 # Security
 #####################################
+
+
 
 #####################################
 # Paths
@@ -41,3 +227,97 @@ paths:
       responses:
         200:
           description: Shows message about server is running well
+
+  /libquality/v1/github/repo/{repo}:
+    get:
+      summary: >-
+        Get Github repository.
+      description: >-
+        Github repository is registered in database along with its issues list, according to requested issue state.
+      tags:
+        - LibQuality
+      parameters:
+          - in: path
+            name: repo
+            required:  true
+            schema: 
+              type: string
+
+          - in: query
+            name: issue_state
+            schema:
+              type: string
+              enum:
+                  - 'open'
+                  - 'closed'
+                  - 'all'
+              default: 'open'
+      
+      responses:
+        200:
+          description: Returns requested and saved Github repository information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubRepo'
+
+  /libquality/v1/github/repo/{owner}/{repo}/issues:
+    get:
+      tags:
+          - LibQuality
+      summary: Get Github repository issues list
+      description: >-
+        - The returned issues are those already registered in database. 
+        - It has a limit of 30 issues
+        - The filter "issue_state" is used in fetch process.
+      parameters:
+          - in: path
+            name: owner
+            required: true
+            schema: 
+              type: string
+          
+          - in: path
+            name: repo
+            required: true
+            schema: 
+              type: string
+
+          - in: query
+            name: issue_state
+            required: false
+            schema:
+              type: string
+              default: 'open'
+              enum:
+                  - 'open'
+                  - 'closed'
+                  - 'all'
+
+          - in: query
+            name: page
+            required: false
+            schema:
+              type: number
+
+      responses:
+        200:
+          description: It is returned repository issues list from requested page
+          content: 
+            application/json:
+              schema:
+                type: object
+                properties:
+                    total:
+                      type: number
+                    page:
+                      type: number
+                    data:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/GithubIssue'
+                        
+                      
+
+      
+
