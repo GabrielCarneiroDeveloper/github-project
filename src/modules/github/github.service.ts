@@ -69,70 +69,33 @@ export class GithubService implements IGithubService {
     })
   }
 
-  async getRepoIssues({ owner, repo, issueState }: GetProjectIssuesDTO): Promise<any> {
-    logger.debug('Service will get issues from Github Api')
-
-    const githubDbRepo = getRepository(GithubRepo)
-    const githubFound = await githubDbRepo.findOneOrFail({ where: { name: repo } })
-
-    const result: any[][] = []
-    const sizeLimitInMbToEachRow = 1 // Mb
-    let temp: any[] = []
+  async getRepoIssues({
+    owner,
+    repo,
+    issueState
+  }: GetProjectIssuesDTO): Promise<IssuesListForRepoResponseData> {
+    const result: IssuesListForRepoResponseData = []
     let page = 1
     let thereIsNoMoreIssues = false
 
     while (!thereIsNoMoreIssues) {
-      logger.debug(`Getting "${issueState}" issues from page number ${page}`)
       const response = await this.github.issues.listForRepo({
-        owner,
         repo,
-        issueState,
+        owner,
+        state: issueState,
         page
       })
       const currentIssuesPage = response.data
-      /*
-       * se o retorno for um array vazio, nao existem mais issues para serem pegas.
-       * nesse vamos adicionar o temp em result e finalizar o processo.
-       */
+
       if (currentIssuesPage.length === 0) {
-        // result.push(temp)
-        githubFound.issues.push(...temp)
-        await githubDbRepo.save(githubFound)
-        logger.debug(`repository ${repo} issues list updated`)
         thereIsNoMoreIssues = true
       }
 
-      /*
-       * se o temp alcancou o limite de memória estipulado, vamos:
-       * - adicinar o temp em result
-       * - zerar temp
-       * - adicionar as issues da pagina atual no temp zerado para que o loop continue e evite redundancias
-       *
-       * Nesse passo o interessante eh salvar temp diretamente no repo no banco de dados
-       */
-      if (memorySizeOf(temp) >= sizeLimitInMbToEachRow) {
-        logger.debug('row ', result.length, 'reached the limit')
-        logger.debug(
-          'issues from page ' + page + ' will be stored in row ' + (result.length + 1) + '\n'
-        )
-        // result.push(temp)
-
-        // salvar temp no banco de dados
-        githubFound.issues.push(...temp)
-        await githubDbRepo.save(githubFound)
-        logger.debug(`repository ${repo} issues list updated`)
-
-        temp = []
-        temp.push(currentIssuesPage)
-      } else {
-        // se o limite de memoria do temp ainda nao foi alcancado, adicionamos as issues da pagina atual em temp
-        logger.debug('populating row', result.length)
-        temp.push(...currentIssuesPage)
-      }
-      // await sleep(3000)
+      logger.debug('Getting information from page ' + page)
+      result.push(...currentIssuesPage)
       page++
     }
-    return githubFound
+    return result
   }
 }
 

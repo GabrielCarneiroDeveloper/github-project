@@ -136,48 +136,26 @@ function sleep(ms: number) {
 
 ;(async function () {
   const sizeLimitInMbToEachRow = 1 // Mb
-  const myList = populateArray([], 600) // mock
-  const pagesOfIssues = mockNumberOfIssuesPerPage(myList, 30) // mock
+  const myList = populateArray([], 10) // mock
+  const pagesOfIssues = mockNumberOfIssuesPerPage(myList, 5) // mock
 
   const result: any[] = []
-  let temp: any[] = []
-  let page = 1
+  const temp: any[] = []
+
   let thereIsNoMoreIssues = false
-
+  let page = 1
   while (!thereIsNoMoreIssues) {
-    // requisicao para pegar as issues de uma pagina de issues de um projeto do github
-    const currentIssuesPage = getPageFromList(page, pagesOfIssues) // this.github.repo.issues(...)
+    const currentIssuesPage = getPageFromList(page, pagesOfIssues)
 
-    /*
-     * se o retorno for um array vazio, nao existem mais issues para serem pegas.
-     * nesse vamos adicionar o temp em result e finalizar o processo.
-     */
     if (currentIssuesPage.length === 0) {
-      result.push(temp)
       thereIsNoMoreIssues = true
     }
 
-    /*
-     * se o temp alcancou o limite de memória estipulado, vamos:
-     * - adicinar o temp em result
-     * - zerar temp
-     * - adicionar as issues da pagina atual no temp zerado para que o loop continue e evite redundancias
-     */
-    if (memorySizeOf(temp) >= sizeLimitInMbToEachRow) {
-      console.log('row ', result.length, 'reached the limit')
-      console.log(
-        'issues from page ' + page + ' will be stored in row ' + (result.length + 1) + '\n'
-      )
-      result.push(temp)
-      temp = []
-      temp.push(currentIssuesPage)
-    } else {
-      // se o limite de memoria do temp ainda nao foi alcancado, adicionamos as issues da pagina atual em temp
-      console.log('populating row', result.length)
-      temp.push(...currentIssuesPage)
-    }
+    result.push(...currentIssuesPage)
     page++
   }
+
+  console.log(pagesOfIssues)
 
   printOf(myList, pagesOfIssues, sizeLimitInMbToEachRow, result)
 })()

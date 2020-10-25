@@ -3,7 +3,7 @@ import { Connection, createConnection } from 'typeorm'
 import { IDb } from './../../common/database/IDb'
 import logger from '../logger/logger'
 import APP_CONFIG from '@src/config/app.config'
-import { GithubRepo } from '@src/modules/github/github.models'
+import { GithubIssue, GithubRepo } from '@src/modules/github/github.models'
 
 export class Db implements IDb {
   private instance: Connection
@@ -20,7 +20,7 @@ export class Db implements IDb {
         database: APP_CONFIG.db.database,
         username: APP_CONFIG.db.user,
         password: APP_CONFIG.db.password,
-        entities: [GithubRepo]
+        entities: [GithubRepo, GithubIssue]
         // migrations: ['src/common/database/migrations/*.ts'],
         // subscribers: ['src/modules/**/*.ts'],
         // cli: {

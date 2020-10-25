@@ -1,4 +1,4 @@
-import { Request, Response, Router } from 'express'
+import { Request, response, Response, Router } from 'express'
 import { IssuesListForRepoResponseData } from '@octokit/types'
 
 import { GithubService } from './github.service'
@@ -9,7 +9,7 @@ import { DTOController } from '../../common/dto/DTOController'
 import { IssueStatesEnum } from './github.enum'
 import { getMongoRepository, MongoRepository } from 'typeorm'
 import { GithubIssue, GithubRepo } from './github.models'
-import { GithubFactory } from './github.factory'
+import { GithubFactory, GithubIssueFactory } from './github.factory'
 
 interface IGithubController {
   getRepoInformation(req: Request, res: Response): Promise<Response<GithubRepo>>
@@ -28,36 +28,31 @@ export class GithubController implements IController, IGithubController {
 
   async init(): Promise<void> {
     this.route.get(this.baseUrl + '/repo/:repo', this.getRepoInformation)
-    // this.route.get(this.baseUrl + '/owner/:owner/repo/:repo/issues', this.getRepoIssues)
+    this.route.get(this.baseUrl + '/repo/:repo/issues', this.getRepoIssues)
   }
 
-  // getRepoFromDatabase = async (req: Request, res: Response): Promise<Response<GithubRepo>> => {
-  //   try {
-  //     const { repo } = req.params
-  //     const issueState = (req.query.issue_state as IssueStatesEnum) || IssueStatesEnum.ALL
-  //     const githubDbRepo = getMongoRepository(GithubRepo)
-  //     return res.json('asdfasdf')
-  //   } catch (error) {
-  //     logger.error(error.message)
-  //     return res.status(401).send({ message: error.message })
-  //   }
-  // }
-
   getRepoInformation = async (req: Request, res: Response): Promise<Response<GithubRepo>> => {
+    // get data from request
+    const { repo } = req.params
+    const issueState = (req.query.issue_state as IssueStatesEnum) || IssueStatesEnum.ALL
+
+    // declare mongo repositories
+    const githubDbRepo = getMongoRepository(GithubRepo)
+    const githubIssueDbRepo = getMongoRepository(GithubIssue)
+
+    if (!repo) {
+      throw new Error('Repository name is invalid')
+    }
+
     try {
-      const { repo } = req.params
-      const issueState = (req.query.issue_state as IssueStatesEnum) || IssueStatesEnum.ALL
-      const githubDbRepo = getMongoRepository(GithubRepo)
+      // check if repository already exists in database
+      const repoIsAlreadyRegistered = await this.checkIfRepoIsAlreadyRegistered(githubDbRepo, repo)
 
-      if (!repo) {
-        throw new Error('Repository name is invalid')
-      }
-
-      const repoIsAlreadyRegistered = await githubDbRepo.findOne({ where: { name: repo } })
       if (repoIsAlreadyRegistered) {
         return res.json(repoIsAlreadyRegistered)
       }
 
+      // get repository information from Github
       logger.debug('Getting general repository information')
       const generalRepoInformation = await this.service
         .findRepoByName({ repo })
@@ -65,41 +60,60 @@ export class GithubController implements IController, IGithubController {
           const allReturnedRepo = response.data.items.filter((r) => r.name === repo)
           const mostRelevant = allReturnedRepo[0]
           return mostRelevant
-        }) // the more relevant will be the first
+        }) // select the more relevant. It will be the first
 
       if (!generalRepoInformation) {
         throw new Error('Requested repository is not classified as a relevant project')
       }
 
+      // register repository in database primaryli
       const owner = generalRepoInformation.owner.login
       const repoName = generalRepoInformation.name
+      const repositoryUrl = `https://api.github.com/repos/${owner}/${repoName}`
 
       logger.debug('Pre registering repo', repo)
-      try {
-        const githubRepoPreRegister = GithubFactory({
-          owner,
-          repo: repoName
-        })
-        await githubDbRepo.save(githubRepoPreRegister)
-        logger.debug('Pre registered successfully')
-      } catch (error) {
-        throw new Error(error.message)
-      }
+      const githubRepo = GithubFactory({
+        owner,
+        repo: repoName,
+        repositoryUrl
+      })
+      logger.debug('Pre registered successfully')
 
-      logger.debug('Getting full repository information')
-      const result = await this.getGithubRepoIssuesList({
+      // get repository issues from Github
+      logger.debug('Getting repository issue list with status ' + issueState.valueOf())
+      const githubRepoIssueList = await this.getGithubRepoIssuesList({
         owner,
         issueState,
         repo: repoName
-      })
+      }).then(this.mapToGithubIssueList)
+      logger.debug('Requested repository issue list successfully fetched')
 
-      // TODO: Github repo should be saved in database from here, not service
+      githubRepo.quantity_of_opened_issues = githubRepoIssueList.length
+      // save issues in repository database register
+      const registeredGithubRepo = await githubDbRepo.save(githubRepo)
+      await githubIssueDbRepo.insertMany(githubRepoIssueList)
 
-      // if (!result.id) {
-      //   this.saveGithubRepoInDatabase({ githubDbRepo, githubRepo: result })
-      // }
+      return res.json(registeredGithubRepo)
+    } catch (error) {
+      logger.error(error.message)
+      return res.status(401).send({ message: error.message })
+    }
+  }
 
-      return res.json(result)
+  getRepoIssues = async (req: Request, res: Response): Promise<any> => {
+    try {
+      const { repo } = req.params
+      const issueState = (req.query.issue_state as IssueStatesEnum) || IssueStatesEnum.ALL
+
+      // declare mongo repositories
+      const githubDbRepo = getMongoRepository(GithubRepo)
+      const githubIssueDbRepo = getMongoRepository(GithubIssue)
+
+      if (!repo) {
+        throw new Error('Repository name is invalid')
+      }
+
+      return res.json('asdfasdfasdf')
     } catch (error) {
       logger.error(error.message)
       return res.status(401).send({ message: error.message })
@@ -114,16 +128,10 @@ export class GithubController implements IController, IGithubController {
     owner: string
     repo: string
     issueState: IssueStatesEnum
-  }): Promise<GithubRepo> {
+  }): Promise<IssuesListForRepoResponseData> {
     logger.debug('Getting repo information from Github...')
-
-    // TODO: Github project initial information should be returned by .getRepoissues()
-    const githubRepo = await this.service.getRepoIssues({ owner, repo, issueState })
-
-    // const githubRepo = GithubFactory({ owner, repo })
-    // githubRepo.issues = collectedIssues
-
-    return githubRepo
+    const issuesList = await this.service.getRepoIssues({ owner, repo, issueState })
+    return issuesList
   }
 
   private async saveGithubRepoInDatabase({
@@ -147,16 +155,10 @@ export class GithubController implements IController, IGithubController {
     githubDbRepo: MongoRepository<GithubRepo>,
     repo: string
   ): Promise<GithubRepo | undefined> {
-    return await githubDbRepo.findOne({ where: { name: repo } })
-  }
-
-  private checkIfIssueStateIsValid(issueState: IssueStatesEnum): void {
-    if (!Object.values(IssueStatesEnum).includes(issueState)) {
-      throw new Error('issueState is invalid')
-    }
+    return githubDbRepo.findOne({ where: { name: repo } })
   }
 
   private mapToGithubIssueList(data: IssuesListForRepoResponseData): GithubIssue[] {
-    return data.map((issue) => new GithubIssue(issue))
+    return data.map((issue) => GithubIssueFactory(issue))
   }
 }
