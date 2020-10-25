@@ -6,5 +6,5 @@ tmp/
 temp/
 data/
 .env
-logs/
+logs/**/
 dist/
