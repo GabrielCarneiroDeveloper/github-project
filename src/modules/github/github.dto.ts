@@ -7,7 +7,7 @@ interface GetProjectInfoPayloadDTO {
 interface GetProjectIssuesDTO {
   owner: string
   repo: string
-  state: IssueStatesEnum
+  issueState: IssueStatesEnum
 }
 
 export { GetProjectInfoPayloadDTO, GetProjectIssuesDTO }

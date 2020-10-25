@@ -18,6 +18,7 @@ class GithubRepo {
   constructor(owner: string, name: string) {
     this.owner = owner
     this.name = name
+    this.issues = []
   }
 }
 
