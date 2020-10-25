@@ -10,9 +10,17 @@ import { IssueStatesEnum } from './github.enum'
 import { getMongoRepository, MongoRepository } from 'typeorm'
 import { GithubIssue, GithubRepo } from './github.models'
 import { GithubFactory, GithubIssueFactory } from './github.factory'
+import APP_CONFIG from '@src/config/app.config'
+
+interface GetRepoIssuesRouteResponse {
+  total: number
+  page: number
+  data: GithubIssue[]
+}
 
 interface IGithubController {
   getRepoInformation(req: Request, res: Response): Promise<Response<GithubRepo>>
+  getRepoIssues(req: Request, res: Response): Promise<Response<GetRepoIssuesRouteResponse>>
 }
 
 export class GithubController implements IController, IGithubController {
@@ -28,7 +36,8 @@ export class GithubController implements IController, IGithubController {
 
   async init(): Promise<void> {
     this.route.get(this.baseUrl + '/repo/:repo', this.getRepoInformation)
-    this.route.get(this.baseUrl + '/repo/:repo/issues', this.getRepoIssues)
+    this.route.get(this.baseUrl + '/repo/:owner/:repo/issues', this.getRepoIssues)
+    this.route.put(this.baseUrl + '/repo/:owner/:repo', this.updateRepoIssueList)
   }
 
   getRepoInformation = async (req: Request, res: Response): Promise<Response<GithubRepo>> => {
@@ -69,7 +78,7 @@ export class GithubController implements IController, IGithubController {
       // register repository in database primaryli
       const owner = generalRepoInformation.owner.login
       const repoName = generalRepoInformation.name
-      const repositoryUrl = `https://api.github.com/repos/${owner}/${repoName}`
+      const repositoryUrl = this.getRepositoryUrl({ owner, repo: repoName })
 
       logger.debug('Pre registering repo', repo)
       const githubRepo = GithubFactory({
@@ -100,24 +109,101 @@ export class GithubController implements IController, IGithubController {
     }
   }
 
-  getRepoIssues = async (req: Request, res: Response): Promise<any> => {
+  getRepoIssues = async (
+    req: Request,
+    res: Response
+  ): Promise<Response<GetRepoIssuesRouteResponse>> => {
     try {
-      const { repo } = req.params
+      const { owner, repo } = req.params
+      const repositoryUrl = this.getRepositoryUrl({ owner, repo })
       const issueState = (req.query.issue_state as IssueStatesEnum) || IssueStatesEnum.ALL
+      const issuesPerPage = 30 // it will be fix for now
+      let page = 1
+      if (req.query.page) {
+        if (typeof req.query.page === 'object') {
+          page = parseInt(req.query.page[0])
+        } else {
+          page = parseInt(req.query.page)
+        }
+      }
+
+      if (!repo || !owner) {
+        throw new Error('Requested repository data is invalid or not provided')
+      }
 
       // declare mongo repositories
       const githubDbRepo = getMongoRepository(GithubRepo)
       const githubIssueDbRepo = getMongoRepository(GithubIssue)
 
-      if (!repo) {
-        throw new Error('Repository name is invalid')
+      const totalRegisteredIssues = await githubDbRepo
+        .findOneOrFail({
+          where: { owner, name: repo }
+        })
+        .then((response) => response.quantity_of_opened_issues)
+
+      const issuesList = await githubIssueDbRepo.find({
+        where: {
+          repository_url: repositoryUrl,
+          state: issueState
+        },
+        skip: page > 0 ? (page - 1) * issuesPerPage : 0,
+        take: issuesPerPage
+      })
+
+      if (issuesList.length === 0) {
+        throw new Error('Page not found')
       }
 
-      return res.json('asdfasdfasdf')
+      return res.json({
+        total: totalRegisteredIssues,
+        page: page,
+        data: issuesList
+      })
     } catch (error) {
       logger.error(error.message)
       return res.status(401).send({ message: error.message })
     }
+  }
+
+  updateRepoIssueList = async (req: Request, res: Response): Promise<Response<any>> => {
+    try {
+      const { owner, repo } = req.params
+      const repositoryUrl = this.getRepositoryUrl({ owner, repo })
+      const issueState = (req.query.issue_state as IssueStatesEnum) || IssueStatesEnum.ALL
+
+      if (!repo || !owner) {
+        throw new Error('Requested repository data is invalid or not provided')
+      }
+
+      // declare mongo repositories
+      const githubDbRepo = getMongoRepository(GithubRepo)
+      const githubIssueDbRepo = getMongoRepository(GithubIssue)
+
+      const githubRepo = await githubDbRepo.findOneOrFail({
+        where: { name: repo, owner }
+      })
+
+      const issueList = await this.service
+        .getRepoIssues({ owner, repo, issueState })
+        .then(this.mapToGithubIssueList)
+
+      const alreadyRegisteredIssueList = await githubIssueDbRepo.find({
+        where: { repository_url: repositoryUrl }
+      })
+
+      if (issueList.length === alreadyRegisteredIssueList.length) {
+        return res.json({ message: `There is not ${issueState} issues to be added` })
+      }
+
+      return res.json('asdfasdfasd')
+    } catch (error) {
+      logger.error(error.message)
+      return res.status(401).send({ message: error.message })
+    }
+  }
+
+  private uniqBy(a: any[], key: CallableFunction) {
+    return [...new Map(a.map((x: any) => [key(x), x])).values()]
   }
 
   private async getGithubRepoIssuesList({
@@ -160,5 +246,9 @@ export class GithubController implements IController, IGithubController {
 
   private mapToGithubIssueList(data: IssuesListForRepoResponseData): GithubIssue[] {
     return data.map((issue) => GithubIssueFactory(issue))
+  }
+
+  private getRepositoryUrl({ owner, repo }: { owner: string; repo: string }): string {
+    return `${APP_CONFIG.github.baseUrl}/repos/${owner}/${repo}`
   }
 }

@@ -1,9 +1,9 @@
 import { Connection, createConnection } from 'typeorm'
 
-import { IDb } from './../../common/database/IDb'
 import logger from '../logger/logger'
-import APP_CONFIG from '@src/config/app.config'
-import { GithubIssue, GithubRepo } from '@src/modules/github/github.models'
+import APP_CONFIG from './../../config/app.config'
+import { IDb } from './../../common/database/IDb'
+import { GithubIssue, GithubRepo } from './../../modules/github/github.models'
 
 export class Db implements IDb {
   private instance: Connection

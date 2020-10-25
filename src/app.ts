@@ -45,15 +45,13 @@ export class App implements IApp {
 
   async initApiSummarize(route: Router): Promise<void> {
     const swaggerDoc = load(path.resolve(__dirname, 'doc', 'swagger.yml'))
-    swaggerDoc.servers = swaggerDoc.servers.map(
-      (host: { url: string; description: string }) => {
-        host.url = host.url.replace(
-          'HOST_ADDRESS_AND_PORT', // this should be in swagger.yml to be replaced
-          `${APP_CONFIG.serve.host}:${APP_CONFIG.serve.port}`
-        )
-        return host
-      }
-    )
+    swaggerDoc.servers = swaggerDoc.servers.map((host: { url: string; description: string }) => {
+      host.url = host.url.replace(
+        'HOST_ADDRESS_AND_PORT', // this should be in swagger.yml to be replaced
+        `${APP_CONFIG.serve.host}:${APP_CONFIG.serve.port}`
+      )
+      return host
+    })
 
     route.use('/apidoc', swaggerUi.serve, swaggerUi.setup(swaggerDoc))
   }

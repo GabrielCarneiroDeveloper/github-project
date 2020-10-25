@@ -24,8 +24,13 @@ function readVersionFile(): string {
 interface IAPP_CONFIG {
   projectName: string
   jwtSecretkey: string
-  githubAccessToken: string
   version: string
+
+  github: {
+    baseUrl: string
+    accessToken: string
+  }
+
   serve: {
     host: string
     port: number
@@ -49,8 +54,12 @@ interface IAPP_CONFIG {
 const APP_CONFIG = {
   projectName: 'github-project',
   jwtSecretkey: process.env.JWT_SECRET_KEY,
-  githubAccessToken: process.env.GITHUB_TOKEN,
   version: readVersionFile(),
+
+  github: {
+    baseUrl: process.env.GITHUB_BASE_URL || 'https://api.github.com',
+    accessToken: process.env.GITHUB_TOKEN
+  },
 
   serve: {
     host: process.env.HOST_ADDRESS || '0.0.0.0',

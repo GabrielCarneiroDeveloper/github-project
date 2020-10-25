@@ -33,73 +33,73 @@ class GithubIssue {
 
   @Column()
   id: number
-  
+
   @Column()
   node_id: string
-  
+
   @Column()
   url: string
-  
+
   @Column()
   repository_url: string
-  
+
   @Column()
   labels_url: string
-  
+
   @Column()
   comments_url: string
-  
+
   @Column()
   events_url: string
-  
+
   @Column()
   html_url: string
-  
+
   @Column()
   number: number
-  
+
   @Column()
   state: string
-  
+
   @Column()
   title: string
-  
+
   @Column()
   body: string
-  
+
   @Column()
   user: GithubUser
-  
+
   @Column()
   labels: GithubLabel[]
-  
+
   @Column()
   assignee: GithubUser
-  
+
   @Column()
   assignees: GithubUser[]
-  
+
   @Column()
   milestone: GithubMilestone
-  
+
   @Column()
   locked: boolean
-  
+
   @Column()
   active_lock_reason: string
-  
+
   @Column()
   comments: number
-  
+
   @Column()
   pull_request: GithubPullRequest
-  
+
   @Column()
   closed_at: string
-  
+
   @Column()
   created_at: string
-  
+
   @Column()
   updated_at: string
 
@@ -127,7 +127,7 @@ class GithubIssue {
     pull_request: GithubPullRequest,
     closed_at: string,
     created_at: string,
-    updated_at: string,
+    updated_at: string
   ) {
     this.id = id
     this.node_id = node_id

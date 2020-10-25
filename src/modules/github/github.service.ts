@@ -7,31 +7,6 @@ import {
 import { GetProjectInfoPayloadDTO, GetProjectIssuesDTO } from './github.dto'
 import logger from './../../common/logger/logger'
 import APP_CONFIG from '@src/config/app.config'
-import { GithubIssue, GithubRepo } from './github.models'
-import { getRepository } from 'typeorm'
-
-function memorySizeOf(obj: any): number {
-  let bytes = 0
-
-  function sizeOf(obj: any) {
-    if (obj !== null && obj !== undefined) {
-      const objClass = Object.prototype.toString.call(obj).slice(8, -1)
-      if (objClass === 'Object' || objClass === 'Array') {
-        for (const key in obj) {
-          if (!Object.hasOwnProperty.call(obj, key)) continue
-          sizeOf(obj[key])
-        }
-      } else bytes += obj.toString().length * 2
-    }
-    return bytes
-  }
-
-  function formatByteSize(bytes: number) {
-    return parseFloat((bytes / 1048576).toFixed(3))
-  }
-
-  return formatByteSize(sizeOf(obj))
-}
 
 export interface IGithubService {
   // getProject(data: GetProjectInfoPayloadDTO): Promise<OctokitResponse<ReposGetResponseData>>
@@ -49,7 +24,7 @@ export class GithubService implements IGithubService {
   private github: Octokit
 
   constructor() {
-    if (APP_CONFIG.githubAccessToken) {
+    if (APP_CONFIG.github.accessToken) {
       logger.info(
         'Github personal access token is configured. You are configured as signed in user.'
       )
@@ -58,10 +33,10 @@ export class GithubService implements IGithubService {
         'Github personal access token NOT PROVIDED. You are configured as signed out user'
       )
     }
-    this.github = new Octokit({ auth: APP_CONFIG.githubAccessToken })
+    this.github = new Octokit({ auth: APP_CONFIG.github.accessToken })
   }
 
-  findRepoByName({
+  async findRepoByName({
     repo
   }: GetProjectInfoPayloadDTO): Promise<OctokitResponse<SearchReposResponseData>> {
     return this.github.search.repos({
@@ -97,8 +72,4 @@ export class GithubService implements IGithubService {
     }
     return result
   }
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
