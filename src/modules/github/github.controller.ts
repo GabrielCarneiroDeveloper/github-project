@@ -187,15 +187,28 @@ export class GithubController implements IController, IGithubController {
         .getRepoIssues({ owner, repo, issueState })
         .then(this.mapToGithubIssueList)
 
-      const alreadyRegisteredIssueList = await githubIssueDbRepo.find({
-        where: { repository_url: repositoryUrl }
+      /**
+       * TODO: apagar todas as issues desse projeto do banco e depois incluir todas novamente (onde a maioria eh duplicidade)
+       * eh computacionalmente muuuuito caro. O correto é em tempo de execucao, eliminar a duplicidade, atualizar
+       * o status das issues que mudaram de 'open' para 'closed' e adicionar as novas 'open' issues.
+       * Fica como melhoria do processo.
+       */
+
+      logger.debug('Removing project ' + repo + ' issues')
+      const projectIssuesWasDeleted = await githubIssueDbRepo.deleteMany({
+        repository_url: this.getRepositoryUrl({ owner: githubRepo.owner, repo: githubRepo.name })
       })
 
-      if (issueList.length === alreadyRegisteredIssueList.length) {
-        return res.json({ message: `There is not ${issueState} issues to be added` })
+      logger.debug('Updating project ' + repo + ' issues list')
+      if (projectIssuesWasDeleted.deletedCount && projectIssuesWasDeleted.deletedCount > 0) {
+        await githubIssueDbRepo.insertMany(issueList)
       }
 
-      return res.json('asdfasdfasd')
+      logger.debug('Updating project ' + repo + ' quantity of registered issues')
+      githubRepo.quantity_of_opened_issues = issueList.length
+      const updated = await githubDbRepo.save(githubRepo)
+
+      return res.json(updated)
     } catch (error) {
       logger.error(error.message)
       return res.status(401).send({ message: error.message })
