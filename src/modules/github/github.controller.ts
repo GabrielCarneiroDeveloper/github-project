@@ -1,16 +1,17 @@
-import { Request, response, Response, Router } from 'express'
+import { Request, Response, Router } from 'express'
+import { getMongoRepository, MongoRepository } from 'typeorm'
 import { IssuesListForRepoResponseData } from '@octokit/types'
 
-import { GithubService } from './github.service'
-
+import APP_CONFIG from './../../config/app.config'
 import logger from './../../common/logger/logger'
 import { IController } from '../../interfaces/IControllers'
-import { DTOController } from '../../common/dto/DTOController'
+
 import { IssueStatesEnum } from './github.enum'
-import { getMongoRepository, MongoRepository } from 'typeorm'
 import { GithubIssue, GithubRepo } from './github.models'
 import { GithubFactory, GithubIssueFactory } from './github.factory'
-import APP_CONFIG from '@src/config/app.config'
+import { GithubService } from './github.service'
+
+import { DTOController } from '../../common/dto/DTOController'
 
 interface GetRepoIssuesRouteResponse {
   total: number
@@ -31,6 +32,17 @@ export class GithubController implements IController, IGithubController {
   constructor({ route }: DTOController) {
     this.route = route
     this.baseUrl = '/libquality/v1/github'
+
+    if (APP_CONFIG.github.accessToken) {
+      logger.info(
+        'Github personal access token is configured. You are configured as signed in user.'
+      )
+    } else {
+      logger.warn(
+        'Github personal access token NOT PROVIDED. You are configured as signed out user'
+      )
+    }
+
     this.service = new GithubService()
   }
 

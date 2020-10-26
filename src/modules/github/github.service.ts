@@ -4,9 +4,12 @@ import {
   IssuesListForRepoResponseData,
   SearchReposResponseData
 } from '@octokit/types'
+
+import APP_CONFIG from './../../config/app.config'
+
 import { GetProjectInfoPayloadDTO, GetProjectIssuesDTO } from './github.dto'
+
 import logger from './../../common/logger/logger'
-import APP_CONFIG from '@src/config/app.config'
 
 export interface IGithubService {
   // getProject(data: GetProjectInfoPayloadDTO): Promise<OctokitResponse<ReposGetResponseData>>
@@ -24,15 +27,6 @@ export class GithubService implements IGithubService {
   private github: Octokit
 
   constructor() {
-    if (APP_CONFIG.github.accessToken) {
-      logger.info(
-        'Github personal access token is configured. You are configured as signed in user.'
-      )
-    } else {
-      logger.warn(
-        'Github personal access token NOT PROVIDED. You are configured as signed out user'
-      )
-    }
     this.github = new Octokit({ auth: APP_CONFIG.github.accessToken })
   }
 
