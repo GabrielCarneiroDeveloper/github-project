@@ -4,14 +4,15 @@
 openapi: '3.0.2'
 info:
   version: '1.0'
-  title: BrightEyes Store
-  description: BrightEyes Store management API
+  title: LibQuality
+  description: LibQuality management API
 
 #####################################
 # Servers
 #####################################
 servers:
   - url: http://HOST_ADDRESS_AND_PORT # will be changed in server starting
+  # - url: https://HOST_ADDRESS_AND_PORT
 
 #####################################
 # Tags
@@ -318,6 +319,39 @@ paths:
                         $ref: '#/components/schemas/GithubIssue'
                         
                       
+  /libquality/v1/github/repo/{owner}/{repo}?issue_state=open:
+    put:
+      tags:
+        - LibQuality
+      summary: Update repository issues list
+      parameters:
+          - in: path
+            name: owner
+            required: true
+            schema: 
+              type: string
+          
+          - in: path
+            name: repo
+            required: true
+            schema: 
+              type: string
 
-      
+          - in: query
+            name: issue_state
+            required: false
+            schema:
+              type: string
+              default: 'open'
+              enum:
+                  - 'open'
+                  - 'closed'
+                  - 'all'
 
+      responses:
+          200:
+            description: Returns updated repository information
+            content:
+              application/json:
+                schema: 
+                  $ref: '#/components/schemas/GithubRepo'
