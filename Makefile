@@ -8,9 +8,6 @@ help:
 	@echo "	check-code			Run code checkers"
 	@echo "	build				Build the project Docker image"
 	@echo "	clean				Remove not in use Docker objects"
-	@echo "	build-deploy		Build the project Docker image and deploy it in Docker swarm stack"
-	@echo "	deploy				deploy it in Docker swarm stack"
-	@echo "	deploy-swarm		deploy it in Docker swarm stack"
 
 check:
 	node --version
@@ -30,24 +27,41 @@ clean:
 
 build:
 	@echo "Running build process..."
-	@make check-code
-	@make run-tests
+	@make project-build
 	docker-compose build
 
-build-deploy-swarm:
+project-build:
+	@echo "Building project locally first"
+	@make check-code
+	@make run-tests
+	yarn
+	yarn build
+
+build-deploy:
 	@echo "Running build and deploy process..."
 	@make build
-	@deploy-swarm
-
-deploy-swarm:
-	@echo "Running deploy process..."
-	docker stack rm github_project
+	@make dashboard
+	docker stack rm libquality
 	sleep 20
-	docker stack deploy -c docker-compose-prod.yml github_project
+	docker stack deploy -c docker-compose-prod.yml libquality
 
 deploy:
-	@echo "Running deploy process out of swarm"
-	docker run -p 3333:3333 --name github_project github-project_gabrielcarneirodeveloper:1  
+	@echo "Running deploy process..."
+	@echo "Add exec permition to 'deploy.sh' script"
+	# sudo chmod +x deploy.sh
+	# # docker stack rm libquality
+	# # sleep 20
+	# # docker stack deploy -c docker-compose-prod.yml libquality
+	# docker stack deploy -c docker-compose-db.yml mongo
+	# sleep 20
+	./run.sh N
+
+dashboard:
+	@echo "Deploying ELK stack"
+	@echo "Due to high memory usage from ELK stack is necessary increase memory limit usage"
+	sudo sysctl -w vm.max_map_count=262144
+	docker-compose -f docker-compose-dashboard.yml up -d
+	# docker stack deploy -c docker-compose-dashboard.yml dashboard
 
 
 ######################## 	Tests 	########################################################
@@ -70,3 +84,6 @@ check-code:
 check-code-fix:
 	@echo "Running code checkers and perform fixes..."
 	yarn code-checker:fix
+
+check-containers-health:
+	@echo ""
