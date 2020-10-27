@@ -36,6 +36,14 @@ interface IAPP_CONFIG {
     port: number
     logLevel: string
   }
+
+  elk: {
+    host: string
+    port: string
+    apiVersion: string
+    logLevel: string
+  }
+
   db: {
     type: string
     host: string
@@ -44,6 +52,7 @@ interface IAPP_CONFIG {
     user: string
     password: string
   }
+
   logs: {
     basePath: string
     errorsPath: string
@@ -62,9 +71,16 @@ const APP_CONFIG = {
   },
 
   serve: {
-    host: process.env.HOST_ADDRESS || '0.0.0.0',
+    host: process.env.HOST_ADDRESS || 'localhost',
     port: parseInt(process.env.PORT || '3400'),
     logLevel: process.env.LOG_LEVEL || 'info'
+  },
+
+  elk: {
+    host: process.env.ELK_HOST || 'localhost',
+    port: process.env.ELK_PORT || '9200',
+    apiVersion: process.env.ELK_VERSION || '7.4',
+    logLevel: process.env.ELK_LOG_LEVEL || 'tracer'
   },
 
   db: {

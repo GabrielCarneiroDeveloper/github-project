@@ -19,6 +19,7 @@ docker stack deploy -c docker-compose-db.yml mongo
 docker stop "${CONTAINER_NAME}" || true && docker rm "${CONTAINER_NAME}" || true
 
 export DB_HOST=$(hostname -I | awk '{print$1}')
+export ELK_HOST=$(hostname -I | awk '{print$1}')
 
 [ -z "${DOCKER_IMAGE}" ] && echo 'Error: DOCKER_IMAGE not declared' && exit 1
 [ -z "${DOCKER_IMAGE_VERSION}" ] && echo 'Error: DOCKER_IMAGE_VERSION not declared' && exit 1

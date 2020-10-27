@@ -12,6 +12,7 @@ import { GithubFactory, GithubIssueFactory } from './github.factory'
 import { GithubService } from './github.service'
 
 import { DTOController } from '../../common/dto/DTOController'
+import getELKClient from './../../common/elasticsearch/elasticsearch'
 
 interface GetRepoIssuesRouteResponse {
   total: number
@@ -180,7 +181,6 @@ export class GithubController implements IController, IGithubController {
   updateRepoIssueList = async (req: Request, res: Response): Promise<Response<any>> => {
     try {
       const { owner, repo } = req.params
-      const repositoryUrl = this.getRepositoryUrl({ owner, repo })
       const issueState = (req.query.issue_state as IssueStatesEnum) || IssueStatesEnum.ALL
 
       if (!repo || !owner) {
@@ -220,15 +220,17 @@ export class GithubController implements IController, IGithubController {
       githubRepo.quantity_of_opened_issues = issueList.length
       const updated = await githubDbRepo.save(githubRepo)
 
+      // unfortunatelly, even using "bulk" approach, it has a large computational cost
+      // because the ELK database registers are dropped and created again at every update
+      logger.debug('Updating Elastic Search database')
+      await this.synchronizeELKGithubRepoWithMongo()
+      await this.synchronizeELKGithubIssueWithMongo()
+
       return res.json(updated)
     } catch (error) {
       logger.error(error.message)
       return res.status(401).send({ message: error.message })
     }
-  }
-
-  private uniqBy(a: any[], key: CallableFunction) {
-    return [...new Map(a.map((x: any) => [key(x), x])).values()]
   }
 
   private async getGithubRepoIssuesList({
@@ -245,23 +247,6 @@ export class GithubController implements IController, IGithubController {
     return issuesList
   }
 
-  private async saveGithubRepoInDatabase({
-    githubDbRepo,
-    githubRepo
-  }: {
-    githubDbRepo: MongoRepository<GithubRepo>
-    githubRepo: GithubRepo
-  }): Promise<GithubRepo> {
-    try {
-      logger.debug('Saving Github repository in database')
-      const registered = await githubDbRepo.save(githubRepo)
-      logger.debug('Github repository saved in database successfully')
-      return registered
-    } catch (error) {
-      throw new Error(error.message)
-    }
-  }
-
   private async checkIfRepoIsAlreadyRegistered(
     githubDbRepo: MongoRepository<GithubRepo>,
     repo: string
@@ -275,5 +260,127 @@ export class GithubController implements IController, IGithubController {
 
   private getRepositoryUrl({ owner, repo }: { owner: string; repo: string }): string {
     return `${APP_CONFIG.github.baseUrl}/repos/${owner}/${repo}`
+  }
+
+  // ELK handling methods
+  private async synchronizeELKGithubRepoWithMongo() {
+    const _type = 'github_repo'
+    const _index = 'github_repo'
+
+    const githubRepo = getMongoRepository(GithubRepo)
+
+    try {
+      const repos = await githubRepo.find() // get every data from mongo
+      const client = getELKClient()
+
+      let fetchedList
+      try {
+        fetchedList = await client
+          .search({
+            index: _index,
+            q: '_type:' + _type
+          })
+          .then((response) => response.hits.hits)
+
+        if (fetchedList.length > 0) {
+          await this.deleteELK(client, fetchedList, _index, _type)
+        }
+      } catch (error) {
+        console.log('Index is still not created. Nothing to be fetched.')
+      }
+      await this.updateGithubRepoELK(client, repos, _index, _type)
+    } catch (error) {
+      console.error(error.message)
+    }
+  }
+
+  private async synchronizeELKGithubIssueWithMongo() {
+    const _type = 'github_issue'
+    const _index = 'github_issue'
+
+    const githubIssue = getMongoRepository(GithubIssue)
+
+    try {
+      const repos = await githubIssue.find() // get every data from mongo
+      const client = getELKClient()
+      let fetchedList
+
+      try {
+        fetchedList = await client
+          .search({
+            index: _index,
+            q: '_type:' + _type
+          })
+          .then((response) => response.hits.hits)
+
+        if (fetchedList.length > 0) {
+          await this.deleteELK(client, fetchedList, _index, _type)
+        }
+
+        console.log(fetchedList)
+      } catch (error) {
+        console.log('Index is still not created. Nothing to be fetched.')
+      }
+      await this.updateGithubIssueELK(client, repos, _index, _type)
+    } catch (error) {
+      console.error(error.message)
+    }
+  }
+
+  private async updateGithubRepoELK(
+    client: any,
+    wrapData: any,
+    _index: string,
+    _type: string
+  ): Promise<any> {
+    const parsedDataToBeBulked = wrapData.reduce((acc: any[], o: any) => {
+      acc.push({ index: { _index, _id: o._id, _type } })
+
+      const p = new GithubRepo(o.owner, o.name, o.repository_url)
+      p.quantity_of_opened_issues = o.quantity_of_opened_issues
+
+      acc.push(p)
+      return acc
+    }, [])
+
+    return await client.bulk({
+      body: parsedDataToBeBulked
+    })
+  }
+
+  private async updateGithubIssueELK(
+    client: any,
+    wrapData: any,
+    _index: string,
+    _type: string
+  ): Promise<any> {
+    const parsedDataToBeBulked = wrapData.reduce((acc: any[], o: any) => {
+      acc.push({ index: { _index, _id: o._id, _type } })
+
+      const p = GithubIssueFactory(o)
+
+      acc.push(p)
+      return acc
+    }, [])
+
+    return await client.bulk({
+      body: parsedDataToBeBulked
+    })
+  }
+
+  private async deleteELK(client: any, wrapData: any, _index: string, _type: string): Promise<any> {
+    let parsedDataToBeBulked
+    if (wrapData instanceof Array) {
+      parsedDataToBeBulked = wrapData.reduce((acc, o) => {
+        acc.push({ delete: { _index, _id: o._id, _type } })
+        return acc
+      }, [])
+    } else {
+      parsedDataToBeBulked = [{ delete: { _index, _id: wrapData._id, _type } }]
+    }
+
+    return await client.bulk({
+      body: parsedDataToBeBulked
+    })
   }
 }

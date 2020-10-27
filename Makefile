@@ -54,7 +54,7 @@ deploy:
 	# # docker stack deploy -c docker-compose-prod.yml libquality
 	# docker stack deploy -c docker-compose-db.yml mongo
 	# sleep 20
-	./run.sh N
+
 
 dashboard:
 	@echo "Deploying ELK stack"
