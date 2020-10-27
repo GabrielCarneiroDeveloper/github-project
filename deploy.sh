@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+make build
+
 if [ -f deploy.prop ]; then
     echo "deploy.prop file found"
     echo "Loading deploy.prop file."
@@ -13,6 +15,8 @@ fi
 docker stack rm mongo
 sleep 20
 docker stack deploy -c docker-compose-db.yml mongo
+
+docker stop "${CONTAINER_NAME}" || true && docker rm "${CONTAINER_NAME}" || true
 
 export DB_HOST=$(hostname -I | awk '{print$1}')
 
@@ -60,6 +64,10 @@ docker run \
     --env GITHUB_BASE_URL="${GITHUB_BASE_URL}" \
     --publish "${CONTAINER_PORT}:${CONTAINER_PORT}" \
     ${DOCKER_IMAGE}:${DOCKER_IMAGE_VERSION}
+
+rm -rf dist
+
+make dashboard
 
 echo "${CONTAINER_NAME} is running on http://localhost:${CONTAINER_PORT}"
 docker logs "${CONTAINER_NAME}" --follow
