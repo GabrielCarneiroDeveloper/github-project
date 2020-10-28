@@ -54,17 +54,25 @@ export ELK_HOST=$(hostname -I | awk '{print$1}')
 [ -z "${ELK_LOG_LEVEL}" ] && echo 'Error: ELK_LOG_LEVEL not declared' && exit 1
 
 ###########################################
-# Deploy database
-###########################################
-# ./database/deploy-db.sh
-
-###########################################
 # Deploy ElasticSearch
 ###########################################
-# ./dashboard/deploy-dashboard.sh
+./dashboard/deploy-dashboard.sh
 
 ###########################################
-# Deploy LibQuality service
+# Deploy LibQuality database and service
 ###########################################
-docker-compose build --no-cache
-docker-compose --file docker-compose-prod.yml up -d
+# nao usando stack
+echo "Deploying LibQuality stack..."
+./config.sh
+
+# usando stack (preferivel)
+docker stack rm libquality
+sleep 20
+docker stack deploy -c docker-compose-prod.yml libquality
+
+echo "Finishing deployment process..."
+sleep 5
+echo "Libquality stack deployed!"
+
+# remove address from ELK_HOST
+sed -ri -e "s/ELK_HOST=.*$/ELK_HOST=0.0.0.0/" docker-compose-prod.yml

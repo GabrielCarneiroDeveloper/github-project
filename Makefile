@@ -62,6 +62,14 @@ dashboard:
 	docker-compose -f dashboard/docker-compose-dashboard.yml up -d
 	# docker stack deploy -c docker-compose-dashboard.yml dashboard
 
+turnon:
+	./deploy.sh
+
+turnoff:
+	docker-compose -f dashboard/docker-compose-dashboard.yml down
+	docker stack rm libquality
+	@echo "Libquality is turned off"
+
 
 ######################## 	Tests 	########################################################
 

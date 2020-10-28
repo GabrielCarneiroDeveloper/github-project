@@ -8,3 +8,7 @@ echo "Deploying ELK stack"
 echo "Due to high memory usage from ELK stack is necessary increase memory limit usage"
 sudo sysctl -w vm.max_map_count=262144
 docker-compose -f dashboard/docker-compose-dashboard.yml up -d
+
+sleep 20
+
+echo "ELK stack deployed successfully."

@@ -4,12 +4,36 @@ services:
   web_service:
     image: libquality_gabrielcarneirodeveloper:1
     ports:
-      - ${PORT}:3333
+      - $PORT:3333
     deploy:
       mode: replicated
       replicas: 1
     env_file: ./deploy.prop
+    depends_on: 
+      - mongo
     environment: 
-      - DB_HOST=""
-      - ELK_HOST=""
-    
+      - DB_HOST=$mongo
+      - ELK_HOST=0.0.0.0
+    # links: 
+    #   - mongo
+
+  mongo:
+    image: mongo:4.4
+    deploy:
+      restart_policy:
+        condition: on-failure
+    environment:
+        - MONGO_INITDB_DATABASE=$DB_DATABASE
+        - MONGO_INITDB_ROOT_USERNAME=$DB_ROOT_USER
+        - MONGO_INITDB_ROOT_PASSWORD=$DB_ROOT_PASS
+        - MONGO_INITDB_USERNAME=$DB_USER
+        - MONGO_INITDB_PASSWORD=$DB_PASSWORD
+    ports:
+      - $DB_PORT:27017
+    volumes:
+      - mongodb-volume:/data/db
+      - ./database/init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh
+    command: --auth
+
+volumes:
+  mongodb-volume:
