@@ -1,5 +1,7 @@
 FROM node:14.14 as builder
 
+LABEL maintainer="Gabriel M. Carneiro <carneiro.development@gmail.com>"
+
 RUN mkdir /usr/src/app
 
 COPY src /usr/src/app/src
@@ -17,25 +19,40 @@ RUN mkdir /usr/src/app/logs
 
 WORKDIR /usr/src/app
 
-RUN yarn
 
 #####################################
-# Run tests
+# Install dev dependencies, run tests and linter
 #####################################
-RUN yarn test
-RUN yarn code-checker
+RUN yarn --no-lockfile && yarn test && yarn code-checker
 
 #####################################
 # Build project
 #####################################
-
 RUN yarn tsc
 RUN cp -r ./src/doc ./dist/
+RUN cp package.json ./dist/
+RUN cp ormconfig.json ./dist/
+
+WORKDIR /usr/src/app/dist
+
+RUN yarn --production
+
+#####################################
+# Production setup stage
+#####################################
+FROM node:14.14-alpine
+
+COPY --from=builder /usr/src/app/dist /usr/src/app
+COPY --from=builder /usr/src/app/.version /usr/src
+
+RUN mkdir /usr/src/logs
+
+WORKDIR /usr/src/app
+
+RUN yarn --production
 
 #####################################
 # Final configurations
 #####################################
 EXPOSE 3333
-WORKDIR /usr/src/app/dist
-# ENTRYPOINT yarn dev
 ENTRYPOINT node server.js
