@@ -115,6 +115,12 @@ export class GithubController implements IController, IGithubController {
       const registeredGithubRepo = await githubDbRepo.save(githubRepo)
       await githubIssueDbRepo.insertMany(githubRepoIssueList)
 
+      // unfortunatelly, even using "bulk" approach, it has a large computational cost
+      // because the ELK database registers are dropped and created again at every update
+      logger.debug('Updating Elastic Search database')
+      await this.synchronizeELKGithubRepoWithMongo()
+      await this.synchronizeELKGithubIssueWithMongo()
+
       return res.json(registeredGithubRepo)
     } catch (error) {
       logger.error(error.message)
