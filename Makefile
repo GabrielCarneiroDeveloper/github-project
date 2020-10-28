@@ -55,7 +55,6 @@ deploy:
 	# docker stack deploy -c docker-compose-db.yml mongo
 	# sleep 20
 
-
 dashboard:
 	@echo "Deploying ELK stack"
 	@echo "Due to high memory usage from ELK stack is necessary increase memory limit usage"

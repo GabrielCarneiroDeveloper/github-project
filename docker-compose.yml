@@ -1,7 +1,9 @@
 version: "3.3"
 services:
-  github-project:
-      image: github-project_gabrielcarneirodeveloper:1
+  libquality_webservice:
+      image: libquality_gabrielcarneirodeveloper:1
       build:
         context: ./
         dockerfile: Dockerfile
+      # try to remove it
+      env_file: ./deploy.prop

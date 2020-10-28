@@ -2,13 +2,11 @@ version: "3.3"
 
 services:
   web_service:
-    image: github-project_gabrielcarneirodeveloper:1
+    image: libquality_gabrielcarneirodeveloper:1
     ports:
-      - 3333:3333
+      - ${PORT}:3333
     deploy:
       mode: replicated
       replicas: 1
-    networks:
-      - libquality
-    depends_on: 
-      - mongo
+    env_file: ./deploy.prop
+    

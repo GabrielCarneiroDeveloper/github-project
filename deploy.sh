@@ -17,6 +17,7 @@ fi
 export DB_HOST=$(hostname -I | awk '{print$1}')
 export ELK_HOST=$(hostname -I | awk '{print$1}')
 
+
 ###########################################
 # Requested variables check
 ###########################################
@@ -46,11 +47,24 @@ export ELK_HOST=$(hostname -I | awk '{print$1}')
 [ -z "${GITHUB_TOKEN}" ] && echo 'Error: GITHUB_TOKEN not declared' && exit 1
 [ -z "${GITHUB_BASE_URL}" ] && echo 'Error: GITHUB_BASE_URL not declared' && exit 1
 
+# ElasticSearch variables
+[ -z "${ELK_HOST}" ] && echo 'Error: ELK_HOST not declared' && exit 1
+[ -z "${ELK_PORT}" ] && echo 'Error: ELK_PORT not declared' && exit 1
+[ -z "${ELK_VERSION}" ] && echo 'Error: ELK_VERSION not declared' && exit 1
+[ -z "${ELK_LOG_LEVEL}" ] && echo 'Error: ELK_LOG_LEVEL not declared' && exit 1
 
 ###########################################
 # Deploy database
 ###########################################
-docker stack rm db_${DB_DATABASE}
-sleep 20
-docker stack deploy -c database/docker-compose-db.yml db_${DB_DATABASE}
+# ./database/deploy-db.sh
 
+###########################################
+# Deploy ElasticSearch
+###########################################
+# ./dashboard/deploy-dashboard.sh
+
+###########################################
+# Deploy LibQuality service
+###########################################
+docker-compose build --no-cache
+docker-compose --file docker-compose-prod.yml up -d
