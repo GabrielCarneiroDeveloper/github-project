@@ -60,7 +60,7 @@ dashboard:
 	@echo "Deploying ELK stack"
 	@echo "Due to high memory usage from ELK stack is necessary increase memory limit usage"
 	sudo sysctl -w vm.max_map_count=262144
-	docker-compose -f docker-compose-dashboard.yml up -d
+	docker-compose -f dashboard/docker-compose-dashboard.yml up -d
 	# docker stack deploy -c docker-compose-dashboard.yml dashboard
 
 
