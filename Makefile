@@ -27,15 +27,7 @@ clean:
 
 build:
 	@echo "Running build process..."
-	@make project-build
 	docker-compose build
-
-project-build:
-	@echo "Building project locally first"
-	@make check-code
-	@make run-tests
-	yarn
-	yarn build
 
 build-deploy:
 	@echo "Running build and deploy process..."

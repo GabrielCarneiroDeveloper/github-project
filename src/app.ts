@@ -48,8 +48,8 @@ export class App implements IApp {
   async checkIfDashboardIsRunning(): Promise<void> {
     try {
       const service = new ElasticSearchService()
-      const response = await service.checkElasticSearchIsRunning()
-      console.log(response)
+      await service.checkElasticSearchIsRunning()
+      logger.info('Successfully loaded ElasticSearch connection')
     } catch (error) {
       logger.error('ELK stack is unavailable')
       throw error
@@ -75,7 +75,7 @@ export class App implements IApp {
     } as DTOController)
     await controller.init()
     this.application.use(route)
-    logger.debug('Successfully loaded module ' + controller.constructor.name)
+    logger.info('Successfully loaded module ' + controller.constructor.name)
   }
 
   async initDatabase(): Promise<void> {
