@@ -9,4 +9,7 @@ services:
       mode: replicated
       replicas: 1
     env_file: ./deploy.prop
+    environment: 
+      - DB_HOST=""
+      - ELK_HOST=""
     
