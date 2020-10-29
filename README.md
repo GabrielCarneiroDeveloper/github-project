@@ -6,7 +6,7 @@ Short description
 
 - OS Linux (only tested)
 - Github (to download the project)
-- Docker/DockerCompose (v19.03 - only tested)
+- Docker (v19.03 - tested)/DockerCompose (v1.25 - tested)
 - Host must to be Swarm node. If it doesn't, run command bellow:
   
 ``` bash
