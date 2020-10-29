@@ -4,12 +4,12 @@ set -e
 ###########################################
 # Configurations to build process
 ###########################################
-if [ -f deploy.prop ]; then
-    echo "deploy.prop file found"
-    echo "Loading deploy.prop file."
-    export $(grep -v ^# < deploy.prop)
+if [ -f .env ]; then
+    echo ".env file found"
+    echo "Loading .env file."
+    export $(grep -v ^# < .env)
 else 
-    echo "deploy.prop file not found"
+    echo ".env file not found"
     exit 1
 fi
 
@@ -53,24 +53,27 @@ export ELK_HOST=$(hostname -I | awk '{print$1}')
 [ -z "${ELK_VERSION}" ] && echo 'Error: ELK_VERSION not declared' && exit 1
 [ -z "${ELK_LOG_LEVEL}" ] && echo 'Error: ELK_LOG_LEVEL not declared' && exit 1
 
-# is necessary keep the sort of services starting. 1: dashboard, 2: database, 3: service
-###########################################
-# 1 - Deploy ElasticSearch (Dashboard)
-###########################################
-./dashboard/deploy-dashboard.sh
-
-###########################################
-# 2 and 3 - Deploy LibQuality database and service
-###########################################
-
-./config.sh
-docker stack rm libquality
-sleep 20
-docker stack deploy -c docker-compose-prod.yml libquality
-
-echo "Finishing deployment process..."
-sleep 5
-echo "Libquality stack deployed!"
-
-# remove elk host address from docker-compose-prod.yml
-sed -ri -e "s/ELK_HOST=.*$/ELK_HOST=0.0.0.0/" docker-compose-prod.yml
+docker run \
+    -it \
+    --rm \
+    --name "${CONTAINER_NAME}" \
+    --env NODE_ENV="${NODE_ENV}" \
+    --env HOST_ADDRESS="${HOST_ADDRESS}" \
+    --env PORT=${PORT} \
+    --env LOG_LEVEL="${LOG_LEVEL}" \
+    --env DB_TYPE="${DB_TYPE}" \
+    --env DB_HOST="${DB_HOST}" \
+    --env DB_PORT=${DB_PORT}} \
+    --env DB_DATABASE="${DB_DATABASE}" \
+    --env DB_USER="${DB_USER}" \
+    --env DB_PASSWORD="${DB_PASSWORD}" \
+    --env JWT_SECRET_KEY="${JWT_SECRET_KEY}" \
+    --env GITHUB_TOKEN="${GITHUB_TOKEN}" \
+    --env GITHUB_BASE_URL="${GITHUB_BASE_URL}" \
+    --env ELK_HOST="${ELK_HOST}" \
+    --env ELK_PORT="${ELK_PORT}" \
+    --env ELK_VERSION="${ELK_VERSION}" \
+    --env ELK_LOG_LEVEL="${ELK_LOG_LEVEL}" \
+    --entrypoint="/bin/sh" \
+    --publish "${PORT}:${CONTAINER_PORT}" \
+    ${DOCKER_IMAGE}:${DOCKER_IMAGE_VERSION}

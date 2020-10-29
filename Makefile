@@ -6,7 +6,15 @@ help:
 	@echo "	run-tests			Run unit tests"
 	@echo "	runserver			Run the application in Development mode"
 	@echo "	check-code			Run code checkers"
+	@echo "	check-code-fix			Run code checkers and fix the code"
 	@echo "	build				Build the project Docker image"
+	@echo "	build-deploy			Build and deploy project"
+	@echo "	deploy				Deploy project"
+	@echo "	dashboard			Deploy ELK containers"
+	@echo "	database-dev			Deploy dev environment database"
+	@echo "	turnoff				Shutdown all services"
+	@echo "	deploy-dev			Deploy services in dev mode (only start database and dashboard)"
+	@echo "	turnoff-dev			Shutdown services in dev mode"
 	@echo "	clean				Remove not in use Docker objects"
 
 check:
@@ -32,35 +40,39 @@ build:
 build-deploy:
 	@echo "Running build and deploy process..."
 	@make build
-	@make dashboard
-	docker stack rm libquality
-	sleep 20
-	docker stack deploy -c docker-compose-prod.yml libquality
+	@deploy
 
 deploy:
 	@echo "Running deploy process..."
-	@echo "Add exec permition to 'deploy.sh' script"
-	# sudo chmod +x deploy.sh
-	# # docker stack rm libquality
-	# # sleep 20
-	# # docker stack deploy -c docker-compose-prod.yml libquality
-	# docker stack deploy -c docker-compose-db.yml mongo
-	# sleep 20
+	./deploy.sh
 
 dashboard:
 	@echo "Deploying ELK stack"
 	@echo "Due to high memory usage from ELK stack is necessary increase memory limit usage"
 	sudo sysctl -w vm.max_map_count=262144
 	docker-compose -f dashboard/docker-compose-dashboard.yml up -d
-	# docker stack deploy -c docker-compose-dashboard.yml dashboard
 
-turnon:
-	./deploy.sh
+database-dev:
+	@echo "Deploying database to dev environment"
+	docker stack rm libquality_db_dev
+	sleep 20
+	docker stack deploy -c ./database/docker-compose-db-dev.yml libquality_db_dev
 
 turnoff:
 	docker-compose -f dashboard/docker-compose-dashboard.yml down
 	docker stack rm libquality
 	@echo "Libquality is turned off"
+
+deploy-dev:
+	@make database-dev
+	@make dashboard
+
+turnoff-dev:
+	docker-compose -f dashboard/docker-compose-dashboard.yml down
+	docker stack rm libquality_db_dev
+	sleep 20
+	@echo "Libquality dev is turned off"
+
 
 
 ######################## 	Tests 	########################################################
@@ -83,6 +95,3 @@ check-code:
 check-code-fix:
 	@echo "Running code checkers and perform fixes..."
 	yarn code-checker:fix
-
-check-containers-health:
-	@echo ""

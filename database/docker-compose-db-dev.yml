@@ -1,0 +1,23 @@
+version: "3.3"
+
+services:
+  mongo:
+    image: mongo:4.4
+    deploy:
+      restart_policy:
+        condition: on-failure
+    environment:
+        - MONGO_INITDB_DATABASE=localhost
+        - MONGO_INITDB_ROOT_USERNAME=admin
+        - MONGO_INITDB_ROOT_PASSWORD=senha123
+        - MONGO_INITDB_USERNAME=admin
+        - MONGO_INITDB_PASSWORD=senha123
+    ports:
+      - 5558:27017
+    volumes:
+      - mongodb-volume-dev:/data/db
+      - ./init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh
+    command: --auth
+
+volumes:
+  mongodb-volume-dev:
