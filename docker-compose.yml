@@ -1,9 +1,8 @@
 version: "3.3"
 services:
   libquality_webservice:
-      image: libquality_gabrielcarneirodeveloper:1
+      image: $DOCKER_IMAGE:$DOCKER_IMAGE_VERSION
       build:
         context: ./
         dockerfile: Dockerfile
-      # try to remove it
       env_file: ./deploy.prop

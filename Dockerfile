@@ -8,7 +8,7 @@ COPY src /usr/src/app/src
 COPY test /usr/src/app/test
 
 COPY .version /usr/src/app/.version
-COPY ormconfig.json /usr/src/app/ormconfig.json
+# COPY ormconfig.json /usr/src/app/ormconfig.json
 COPY package.json /usr/src/app/package.json
 COPY tsconfig.json /usr/src/app/tsconfig.json
 COPY jest.config.js /usr/src/app/jest.config.js
@@ -31,7 +31,7 @@ RUN yarn --no-lockfile && yarn test && yarn code-checker
 RUN yarn tsc
 RUN cp -r ./src/doc ./dist/
 RUN cp package.json ./dist/
-RUN cp ormconfig.json ./dist/
+# RUN cp ormconfig.json ./dist/
 
 WORKDIR /usr/src/app/dist
 

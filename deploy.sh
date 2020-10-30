@@ -5,8 +5,7 @@ set -e
 # Configurations to build process
 ###########################################
 if [ -f deploy.prop ]; then
-    echo "deploy.prop file found"
-    echo "Loading deploy.prop file."
+     echo "Loading deploy.prop file."
     export $(grep -v ^# < deploy.prop)
 else 
     echo "deploy.prop file not found"

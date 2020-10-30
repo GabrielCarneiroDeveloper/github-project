@@ -46,7 +46,7 @@ deploy:
 	@echo "Running deploy process..."
 	./deploy.sh
 
-dashboard:
+dashboard-dev:
 	@echo "Deploying ELK stack"
 	@echo "Due to high memory usage from ELK stack is necessary increase memory limit usage"
 	sudo sysctl -w vm.max_map_count=262144
@@ -65,7 +65,7 @@ turnoff:
 
 deploy-dev:
 	@make database-dev
-	@make dashboard
+	@make dashboard-dev
 
 turnoff-dev:
 	docker-compose -f dashboard/docker-compose-dashboard.yml down

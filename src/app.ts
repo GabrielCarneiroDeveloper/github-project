@@ -33,7 +33,6 @@ export class App implements IApp {
   async init(): Promise<void> {
     this.initMiddlewares()
     await this.initDatabase()
-    await this.checkIfDashboardIsRunning()
 
     this.route.get('/', (_, response: Response) => {
       response.json({
@@ -43,17 +42,6 @@ export class App implements IApp {
 
     await this.initApiSummarize(this.route)
     await this.initModule(GithubController, this.route)
-  }
-
-  async checkIfDashboardIsRunning(): Promise<void> {
-    try {
-      const service = new ElasticSearchService()
-      await service.checkElasticSearchIsRunning()
-      logger.info('Successfully loaded ElasticSearch connection')
-    } catch (error) {
-      logger.error('ELK stack is unavailable')
-      throw error
-    }
   }
 
   async initApiSummarize(route: Router): Promise<void> {

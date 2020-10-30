@@ -1,9 +1,9 @@
 ################################
 # Docker configurations
 ################################
-DOCKER_IMAGE=
-DOCKER_IMAGE_VERSION=
-CONTAINER_NAME=
+DOCKER_IMAGE=libquality_gabrielcarneirodeveloper
+DOCKER_IMAGE_VERSION=1
+CONTAINER_NAME=libquality
 CONTAINER_PORT=
 
 ################################
@@ -37,13 +37,13 @@ JWT_SECRET_KEY=
 # Access tokens
 ################################
 GITHUB_TOKEN=
-GITHUB_BASE_URL=
+GITHUB_BASE_URL=https://api.github.com
 
 ################################
 # ElasticSearch configurations
 ################################
 # ELK_HOST will be replaced at deploy time. Look docker-compose-prod.yml
-ELK_HOST=
-ELK_PORT=
-ELK_VERSION=
-ELK_LOG_LEVEL=
+ELK_HOST=""
+ELK_PORT=9200
+ELK_VERSION=7.4
+ELK_LOG_LEVEL=error

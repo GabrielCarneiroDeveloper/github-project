@@ -2,8 +2,7 @@ version: "3.3"
 
 services:
   web_service:
-    # image: $DOCKER_IMAGE:$DOCKER_IMAGE_VERSION
-    image: libquality_gabrielcarneirodeveloper:1
+    image: $DOCKER_IMAGE:$DOCKER_IMAGE_VERSION
     ports:
       - $PORT:3333
     deploy:
