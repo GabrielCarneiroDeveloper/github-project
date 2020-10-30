@@ -211,7 +211,6 @@ export class GithubController implements IController, IGithubController {
        * o status das issues que mudaram de 'open' para 'closed' e adicionar as novas 'open' issues.
        * Fica como melhoria do processo.
        */
-
       logger.debug('Removing project ' + repo + ' issues')
       const projectIssuesWasDeleted = await githubIssueDbRepo.deleteMany({
         repository_url: this.getRepositoryUrl({ owner: githubRepo.owner, repo: githubRepo.name })
@@ -228,6 +227,7 @@ export class GithubController implements IController, IGithubController {
 
       // unfortunatelly, even using "bulk" approach, it has a large computational cost
       // because the ELK database registers are dropped and created again at every update
+      // to the requested repository
       logger.debug('Updating Elastic Search database')
       await this.synchronizeELKGithubRepoWithMongo()
       await this.synchronizeELKGithubIssueWithMongo()
@@ -270,7 +270,7 @@ export class GithubController implements IController, IGithubController {
 
   // ELK handling methods
   private async synchronizeELKGithubRepoWithMongo() {
-    const _type = 'github_repo'
+    const _type = 'libquality'
     const _index = 'github_repo'
 
     const githubRepo = getMongoRepository(GithubRepo)
@@ -292,16 +292,16 @@ export class GithubController implements IController, IGithubController {
           await this.deleteELK(client, fetchedList, _index, _type)
         }
       } catch (error) {
-        console.log('Index is still not created. Nothing to be fetched.')
+        logger.debug('Index is still not created. Nothing to be fetched.')
       }
       await this.updateGithubRepoELK(client, repos, _index, _type)
     } catch (error) {
-      console.error(error.message)
+      logger.error(error.message)
     }
   }
 
   private async synchronizeELKGithubIssueWithMongo() {
-    const _type = 'github_issue'
+    const _type = 'libquality'
     const _index = 'github_issue'
 
     const githubIssue = getMongoRepository(GithubIssue)
@@ -322,14 +322,12 @@ export class GithubController implements IController, IGithubController {
         if (fetchedList.length > 0) {
           await this.deleteELK(client, fetchedList, _index, _type)
         }
-
-        console.log(fetchedList)
       } catch (error) {
-        console.log('Index is still not created. Nothing to be fetched.')
+        logger.debug('Index is still not created. Nothing to be fetched.')
       }
       await this.updateGithubIssueELK(client, repos, _index, _type)
     } catch (error) {
-      console.error(error.message)
+      logger.error(error.message)
     }
   }
 
